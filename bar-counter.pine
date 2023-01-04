@@ -1,0 +1,60 @@
+//@version=4
+study(title="Bar Counter", overlay=true, max_labels_count=500)
+
+startDate = input(defval = timestamp("01 Jan 2000 00:00 +0000"), title = "Start Time", type = input.time)
+endDate = input(defval = timestamp("01 Jan 3000 00:00 +0000"), title = "End Time", type = input.time)
+sessionRange = input(defval = "0800-1700", title = "My Session Range", type = input.session)
+showsessionBG = input(title="Session Background Colour ?", type=input.bool, defval=true)
+showCandelCounter = input(title="Show Candel Counter ?", type=input.bool, defval=true)
+showCandelAnalysis = input(title="Show Candel Analysis ?", type=input.bool, defval=true)
+candelAnalysisLast2Only = input(title="Show Analysis Last 2 Candel only ?", type=input.bool, defval=true)
+color sessionBGColor = input(color.rgb(0,0,220, 90), "Session Background Color", type = input.color)
+color barCountColor = input(color.black, "Bar Count Color", type = input.color)
+color candelAnalysisColor = input(color.black, "Candel Analysis Color", type = input.color)
+
+// Returns true if the current candel falls within session range
+inSession(sess) => na(time(timeframe.period, sess + ":1234567")) == false and time >= startDate and time <= endDate
+
+// Candel Analysis
+oneThirdPriceMovement = (high - low) / 3
+topThirdPrice = high - oneThirdPriceMovement
+bottomThird = low + oneThirdPriceMovement
+hc = close > topThirdPrice
+lc = close < bottomThird
+outside = close >= high[1]
+inside = close <= low[1]
+
+candelCloseLabel = if (hc)
+    'H' // BULL
+else if (lc)
+    'L' // BEAR
+else
+    'M' // NEUTRAL
+
+comparisonLabel = (outside or inside) ? 'G' : 'I'        
+candelAnalysisLabel = candelCloseLabel + comparisonLabel
+
+// Session
+
+var bool withinSession = false
+var int barCount = 0
+bgcolor(inSession(sessionRange) and showsessionBG ? sessionBGColor : na)
+
+// Check if a new session has begun
+if inSession(sessionRange) and not inSession(sessionRange)[1]
+    withinSession := true
+
+// Check if a session has ended
+if not inSession(sessionRange) and inSession(sessionRange)[1]
+    withinSession := false 
+    barCount := 0
+
+// Add labels when in a session
+if withinSession
+    barCount := barCount + 1
+    if showCandelCounter and barCount % 2 == 0
+        label.new(x=bar_index, y=na, yloc=yloc.belowbar, style=label.style_none, textcolor=barCountColor, text= "\n" + tostring(barCount))
+    if showCandelAnalysis
+        cl = label.new(x=bar_index, y=na, yloc=yloc.belowbar, style=label.style_none, textcolor=candelAnalysisColor, text=candelAnalysisLabel)
+        if candelAnalysisLast2Only
+            label.delete(cl[2])

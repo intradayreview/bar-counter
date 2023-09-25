@@ -39,7 +39,7 @@ candelAnalysisLabel = candelCloseLabel + comparisonLabel
 
 var bool withinSession = false
 var int barCount = 0
-bgcolor(color.new(inSession(sessionRange) and showsessionBG ? sessionBGColor : na, 90))
+bgcolor(showsessionBG and inSession(sessionRange) ? color.new(sessionBGColor, 90) : color.new(color.white, 0))
 
 
 // Check if a new session has begun

@@ -1,19 +1,20 @@
-//@version=4
-study(title="Bar Counter", overlay=true, max_labels_count=500)
+//@version=5
+indicator(title='intradayreview.com indicator', overlay=true, max_labels_count=500)
 
-startDate = input(defval = timestamp("01 Jan 2000 00:00 +0000"), title = "Start Time", type = input.time)
-endDate = input(defval = timestamp("01 Jan 3000 00:00 +0000"), title = "End Time", type = input.time)
-sessionRange = input(defval = "0800-1700", title = "My Session Range", type = input.session)
-showsessionBG = input(title="Session Background Colour ?", type=input.bool, defval=true)
-showCandelCounter = input(title="Show Candel Counter ?", type=input.bool, defval=true)
-showCandelAnalysis = input(title="Show Candel Analysis ?", type=input.bool, defval=true)
-candelAnalysisLast2Only = input(title="Show Analysis Last 2 Candel only ?", type=input.bool, defval=true)
-color sessionBGColor = input(color.rgb(0,0,220, 90), "Session Background Color", type = input.color)
-color barCountColor = input(color.black, "Bar Count Color", type = input.color)
-color candelAnalysisColor = input(color.black, "Candel Analysis Color", type = input.color)
+startDate = input.time(defval=timestamp('01 Jan 2000 00:00 +0000'), title='Start Time')
+endDate = input.time(defval=timestamp('01 Jan 3000 00:00 +0000'), title='End Time')
+sessionRange = input.session(defval='0800-1700', title='My Session Range')
+showsessionBG = input(title='Session Background Colour ?', defval=true)
+showCandelCounter = input(title='Show Candel Counter ?', defval=true)
+showCandelAnalysis = input(title='Show Candel Analysis ?', defval=true)
+candelAnalysisLast2Only = input(title='Show Analysis Last 2 Candel only ?', defval=true)
+color sessionBGColor = input(color.rgb(0, 0, 220, 90), 'Session Background Color')
+color barCountColor = input(color.black, 'Bar Count Color')
+color candelAnalysisColor = input(color.black, 'Candel Analysis Color')
 
 // Returns true if the current candel falls within session range
-inSession(sess) => na(time(timeframe.period, sess + ":1234567")) == false and time >= startDate and time <= endDate
+inSession(sess) =>
+    na(time(timeframe.period, sess + ':1234567')) == false and time >= startDate and time <= endDate
 
 // Candel Analysis
 oneThirdPriceMovement = (high - low) / 3
@@ -24,36 +25,39 @@ lc = close < bottomThird
 outside = close >= high[1]
 inside = close <= low[1]
 
-candelCloseLabel = if (hc)
-    'H' // BULL
-else if (lc)
-    'L' // BEAR
+candelCloseLabel = if hc
+    'H'
+else if lc
+    'L'
 else
-    'M' // NEUTRAL
+    'M'
 
-comparisonLabel = (outside or inside) ? 'G' : 'I'        
+comparisonLabel = outside or inside ? 'O' : 'I'
 candelAnalysisLabel = candelCloseLabel + comparisonLabel
 
 // Session
 
 var bool withinSession = false
 var int barCount = 0
-bgcolor(inSession(sessionRange) and showsessionBG ? sessionBGColor : na)
+bgcolor(color.new(inSession(sessionRange) and showsessionBG ? sessionBGColor : na, 90))
+
 
 // Check if a new session has begun
 if inSession(sessionRange) and not inSession(sessionRange)[1]
     withinSession := true
+    withinSession
 
 // Check if a session has ended
 if not inSession(sessionRange) and inSession(sessionRange)[1]
-    withinSession := false 
+    withinSession := false
     barCount := 0
+    barCount
 
 // Add labels when in a session
 if withinSession
-    barCount := barCount + 1
+    barCount += 1
     if showCandelCounter and barCount % 2 == 0
-        label.new(x=bar_index, y=na, yloc=yloc.belowbar, style=label.style_none, textcolor=barCountColor, text= "\n" + tostring(barCount))
+        label.new(x=bar_index, y=na, yloc=yloc.belowbar, style=label.style_none, textcolor=barCountColor, text='\n' + str.tostring(barCount))
     if showCandelAnalysis
         cl = label.new(x=bar_index, y=na, yloc=yloc.belowbar, style=label.style_none, textcolor=candelAnalysisColor, text=candelAnalysisLabel)
         if candelAnalysisLast2Only
